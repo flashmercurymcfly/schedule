@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stream Schedule Builder</title>
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --surface: #18181c;
+      --border: #2a2a32;
+      --accent: #a78bfa;
+      --accent2: #f472b6;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --label: #9d9db5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 32px;
+    }
+
+    .layout {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .controls {
+      flex: 0 0 320px;
+    }
+
+    /* Days grid */
+    .days-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .day-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+
+    .day-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 10px;
+    }
+
+    .field-pair {
+      display: flex;
+      gap: 10px;
+    }
+
+    .field-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field-group label {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--label);
+    }
+
+    .field-group input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 6px 9px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .field-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .field-group input::placeholder {
+      color: var(--muted);
+    }
+
+    /* Action buttons */
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0d0d0f;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: #c4b5fd; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); background: rgba(167,139,250,0.08); }
+
+    /* Canvas area */
+    .canvas-area {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .canvas-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 10px;
+    }
+
+    #canvas-wrapper {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #111;
+      display: inline-block;
+      max-width: 100%;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .hint {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 10px;
+      letter-spacing: 0.06em;
+    }
+
+  </style>
+</head>
+<body>
+
+<h1>Stream Schedule Builder</h1>
+<p class="subtitle">Fill in your weekly schedule &amp; render to canvas</p>
+
+<div class="layout">
+  <!-- LEFT: Controls -->
+  <div class="controls">
+
+    <div class="day-row" style="margin-top: 14px; display: flex; gap: 14px;">
+      <div class="flex field-group">
+        <label>Month</label>
+        <input type="text" id="month" placeholder="July" />
+      </div>
+      <div class="field-group" style="flex: 1;">
+        <label>Start Day</label>
+        <input type="text" id="startDay" placeholder="1" />
+      </div>
+      <div class="field-group" style="flex: 1;">
+        <label>End Day</label>
+        <input type="text" id="endDay" placeholder="7" />
+      </div>
+    </div>
+
+    <div class="days-grid" id="days-grid" style="margin-top: 14px;">
+      <!-- Injected by JS -->
+    </div>
+
+    <div class="day-row" style="margin-top: 14px;">
+      <div class="day-label" style="color: var(--accent);">Art Credit (optional)</div>
+      <div class="field-group">
+        <label>Artist Username</label>
+        <input type="text" id="art-credit" placeholder="e.g. coolartist" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="download-btn">Download</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Canvas preview -->
+  <div class="canvas-area">
+    <div class="canvas-label">Preview</div>
+    <div id="canvas-wrapper">
+      <canvas id="schedule-canvas" width="1920" height="1194"></canvas>
+    </div>
+    <p class="hint">Canvas renders at full resolution. Preview is scaled to fit.</p>
+  </div>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────
+  // CONFIG
+  // ─────────────────────────────────────────────
+  const FONT_FILE = 'RobotoSerif_28pt-SemiBold.ttf';
+  const FONT_NAME = 'ScheduleFont';
+
+  const ART_FONT_FILE = 'RobotoSerif_28pt-Light.ttf';
+  const ART_FONT_NAME = 'ArtCreditFont';
+
+  const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+  // All coordinates in canvas pixels — paste values directly from Photoshop
+  // Each entry: { stream: {x, y}, time: {x, y} }
+  const COORDS = [
+    { stream: { x: 1131.5,  y: 315.56  }, time: { x: 1584.5,  y: 315.56  } }, // Monday
+    { stream: { x: 1131.5,  y: 433.56  }, time: { x: 1584.5,  y: 433.56  } }, // Tuesday
+    { stream: { x: 1131.5,  y: 551.56  }, time: { x: 1584.5,  y: 551.56  } }, // Wednesday
+    { stream: { x: 1131.5,  y: 669.56  }, time: { x: 1584.5,  y: 669.56  } }, // Thursday
+    { stream: { x: 1131.5,  y: 787.56  }, time: { x: 1584.5,  y: 787.56  } }, // Friday
+    { stream: { x: 1131.5,  y: 905.56  }, time: { x: 1584.5,  y: 905.56  } }, // Saturday
+    { stream: { x: 1131.5,  y: 1023.56 }, time: { x: 1584.5,  y: 1023.56 } }, // Sunday
+  ];
+
+  const STREAM_STYLE = {
+    font: `33px ${FONT_NAME}`,
+    color: '#ad9258',
+    shadowColor: 'transparent',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  };
+
+  const TIME_STYLE = {
+    font: `33px ${FONT_NAME}`,
+    color: '#caaf75',
+    shadowColor: 'transparent',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  };
+
+  const WEEK_STYLE = {
+    font: `40px ${ART_FONT_NAME}`,
+    color: '#ad9258',
+    stroke: '#ecdabf',
+    shadowColor: 'transparent',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    x: 1024.5,
+    y: 211.89
+  }
+
+  const DAYS_STYLE = {
+    font: `40px ${ART_FONT_NAME}`,
+    color: '#ad9258',
+    stroke: '#ecdabf',
+    shadowColor: 'transparent',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    x: 1142.5,
+    y: 211.89
+  }
+
+  // Art credit position and style
+  const ART_CREDIT = {
+    x: 188.78,       // ← x position of the art credit text
+    y: 980.16,       // ← y position of the first line ("art by:")
+    lineHeight: 28, // ← gap in pixels between the two lines
+    font: `24px ${ART_FONT_NAME}`,
+    color: '#ffffff',
+    shadowColor: 'transparent',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  };
+
+  // ─────────────────────────────────────────────
+  // BUILD FORM
+  // ─────────────────────────────────────────────
+  const grid = document.getElementById('days-grid');
+
+  DAYS.forEach((day, i) => {
+    const row = document.createElement('div');
+    row.className = 'day-row';
+    row.innerHTML = `
+      <div class="day-label">${day}</div>
+      <div class="field-pair">
+        <div class="field-group">
+          <label>Stream</label>
+          <input type="text" id="stream-${i}" placeholder="e.g. Just Chatting" />
+        </div>
+        <div class="field-group">
+          <label>Time</label>
+          <input type="text" id="time-${i}" placeholder="e.g. 8:00 PM" />
+        </div>
+      </div>
+    `;
+    grid.appendChild(row);
+  });
+
+  // ─────────────────────────────────────────────
+  // FONT LOADING
+  // ─────────────────────────────────────────────
+  let fontLoaded = false;
+  let artFontLoaded = false;
+
+  async function loadFont() {
+    try {
+      const face = new FontFace(FONT_NAME, `url(${FONT_FILE})`);
+      await face.load();
+      document.fonts.add(face);
+      fontLoaded = true;
+      console.log(`[Font] "${FONT_NAME}" loaded from ${FONT_FILE}`);
+    } catch (e) {
+      console.warn(`[Font] Could not load "${FONT_FILE}". Falling back to sans-serif.`, e);
+      fontLoaded = false;
+    }
+
+    try {
+      const artFace = new FontFace(ART_FONT_NAME, `url(${ART_FONT_FILE})`);
+      await artFace.load();
+      document.fonts.add(artFace);
+      artFontLoaded = true;
+      console.log(`[Font] "${ART_FONT_NAME}" loaded from ${ART_FONT_FILE}`);
+    } catch (e) {
+      console.warn(`[Font] Could not load "${ART_FONT_FILE}". Falling back to sans-serif.`, e);
+      artFontLoaded = false;
+    }
+  }
+
+  loadFont();
+
+  // ─────────────────────────────────────────────
+  // BACKGROUND IMAGE (switches based on art credit)
+  // ─────────────────────────────────────────────
+  let bgImage = null;
+  let bgArtist = new Image();
+  let bgNoArtist = new Image();
+  let bgArtistLoaded = false;
+  let bgNoArtistLoaded = false;
+
+  bgArtist.onload = () => { bgArtistLoaded = true; render(); };
+  bgArtist.onerror = () => console.warn('[Background] Could not load "schedule-artist.png".');
+  bgArtist.src = 'schedule-artist.png';
+
+  bgNoArtist.onload = () => { bgNoArtistLoaded = true; render(); };
+  bgNoArtist.onerror = () => console.warn('[Background] Could not load "schedule-no-artist.png".');
+  bgNoArtist.src = 'schedule-no-artist.png';
+
+  // ─────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────
+  const canvas = document.getElementById('schedule-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Background — switch based on whether art credit is filled
+    const artVal = document.getElementById('art-credit').value.trim();
+    const monthVal = document.getElementById('month').value.toUpperCase().trim();
+    const startDayVal = document.getElementById('startDay').value.trim();
+    const endDayVal = document.getElementById('endDay').value.trim();
+    const activeBg = artVal ? bgArtist : bgNoArtist;
+    const activeBgLoaded = artVal ? bgArtistLoaded : bgNoArtistLoaded;
+
+    if (activeBgLoaded) {
+      ctx.drawImage(activeBg, 0, 0, canvas.width, canvas.height);
+    } else {
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Draw schedule text per day
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+
+    DAYS.forEach((_, i) => {
+      const streamVal = document.getElementById(`stream-${i}`).value.toUpperCase().trim() || 'ZZZ';
+      const timeVal   = document.getElementById(`time-${i}`).value.toUpperCase().trim() || 'ZZZ';
+      const coords    = COORDS[i];
+
+      // Stream text
+      ctx.font = fontLoaded ? STREAM_STYLE.font : STREAM_STYLE.font.replace(FONT_NAME, 'sans-serif');
+      ctx.fillStyle = STREAM_STYLE.color;
+      ctx.shadowColor = STREAM_STYLE.shadowColor;
+      ctx.shadowBlur = STREAM_STYLE.shadowBlur;
+      ctx.shadowOffsetX = STREAM_STYLE.shadowOffsetX;
+      ctx.shadowOffsetY = STREAM_STYLE.shadowOffsetY;
+      ctx.fillText(streamVal, coords.stream.x, coords.stream.y);
+
+      // Time text
+      ctx.font = fontLoaded ? TIME_STYLE.font : TIME_STYLE.font.replace(FONT_NAME, 'sans-serif');
+      ctx.fillStyle = TIME_STYLE.color;
+      ctx.shadowColor = TIME_STYLE.shadowColor;
+      ctx.shadowBlur = TIME_STYLE.shadowBlur;
+      ctx.shadowOffsetX = TIME_STYLE.shadowOffsetX;
+      ctx.shadowOffsetY = TIME_STYLE.shadowOffsetY;
+      ctx.fillText(timeVal, coords.time.x, coords.time.y);
+    });
+
+    // Reset shadow so it doesn't affect future draws
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Art credit (optional)
+    if (artVal) {
+      const artFontString = artFontLoaded
+        ? ART_CREDIT.font
+        : ART_CREDIT.font.replace(ART_FONT_NAME, 'sans-serif');
+
+      ctx.font = artFontString;
+      ctx.fillStyle = ART_CREDIT.color;
+      ctx.shadowColor = ART_CREDIT.shadowColor;
+      ctx.shadowBlur = ART_CREDIT.shadowBlur;
+      ctx.shadowOffsetX = ART_CREDIT.shadowOffsetX;
+      ctx.shadowOffsetY = ART_CREDIT.shadowOffsetY;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+
+      ctx.fillText('art by:', ART_CREDIT.x, ART_CREDIT.y);
+      ctx.fillText(`@${artVal}`, ART_CREDIT.x, ART_CREDIT.y + ART_CREDIT.lineHeight);
+
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    }
+
+    //
+    if (monthVal) {
+      ctx.font = fontLoaded ? WEEK_STYLE.font : WEEK_STYLE.font.replace(FONT_NAME, 'sans-serif');
+      ctx.fillStyle = WEEK_STYLE.color;
+      ctx.strokeStyle = WEEK_STYLE.stroke;
+      ctx.shadowColor = WEEK_STYLE.shadowColor;
+      ctx.shadowBlur = WEEK_STYLE.shadowBlur;
+      ctx.shadowOffsetX = WEEK_STYLE.shadowOffsetX;
+      ctx.shadowOffsetY = WEEK_STYLE.shadowOffsetY;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      ctx.fillText(monthVal, WEEK_STYLE.x, WEEK_STYLE.y);
+      ctx.lineWidth = 0.25;
+      ctx.strokeText(monthVal, WEEK_STYLE.x, WEEK_STYLE.y);
+    }
+
+    if (startDayVal && endDayVal) {
+      ctx.font = fontLoaded ? DAYS_STYLE.font : DAYS_STYLE.font.replace(FONT_NAME, 'sans-serif');
+      ctx.fillStyle = DAYS_STYLE.color;
+      ctx.strokeStyle = DAYS_STYLE.stroke;
+      ctx.shadowColor = DAYS_STYLE.shadowColor;
+      ctx.shadowBlur = DAYS_STYLE.shadowBlur;
+      ctx.shadowOffsetX = DAYS_STYLE.shadowOffsetX;
+      ctx.shadowOffsetY = DAYS_STYLE.shadowOffsetY;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      ctx.fillText(startDayVal + '-' + endDayVal, DAYS_STYLE.x, DAYS_STYLE.y);
+      ctx.lineWidth = 0.25;
+      ctx.strokeText(startDayVal + '-' + endDayVal, DAYS_STYLE.x, DAYS_STYLE.y);
+    }
+  }
+
+  // Re-render on any input change
+  document.querySelectorAll('input[type="text"]').forEach(input => {
+    input.addEventListener('input', render);
+  });
+
+  // Initial render once background image loads
+  bgImg.onload = () => { bgImage = bgImg; render(); };
+
+  // ─────────────────────────────────────────────
+  // DOWNLOAD
+  // ─────────────────────────────────────────────
+  document.getElementById('download-btn').addEventListener('click', () => {
+    render(); // ensure latest
+    const link = document.createElement('a');
+    link.download = 'schedule-art.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+</script>
+</body>
+</html>
