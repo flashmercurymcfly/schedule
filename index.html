@@ -197,6 +197,14 @@
 
     <div class="day-row" style="margin-top: 14px; display: flex; gap: 14px;">
       <div class="flex field-group">
+        <label>Art</label>
+        <select name="art" id="art">
+        </select>
+      </div>
+    </div>
+
+    <div class="day-row" style="margin-top: 14px; display: flex; gap: 14px;">
+      <div class="flex field-group">
         <label>Month</label>
         <input type="text" id="month" placeholder="July" />
       </div>
@@ -260,6 +268,12 @@
     { stream: { x: 1131.5,  y: 905.56  }, time: { x: 1584.5,  y: 905.56  } }, // Saturday
     { stream: { x: 1131.5,  y: 1023.56 }, time: { x: 1584.5,  y: 1023.56 } }, // Sunday
   ];
+
+  const ART_CHOICES = [
+    {value: '1', label: 'Art 1'},
+    {value: '2', label: 'Art 2'},
+    {value: '3', label: 'Art 3'}
+  ]
 
   const STREAM_STYLE = {
     font: `33px ${FONT_NAME}`,
@@ -340,6 +354,17 @@
     grid.appendChild(row);
   });
 
+  const dropdown = document.getElementById('art');
+
+  ART_CHOICES.forEach(choice => {
+    const option = document.createElement('option');
+  
+    option.value = choice.value;
+    option.textContent = choice.label;
+  
+    dropdown.appendChild(option);
+  });
+
   // ─────────────────────────────────────────────
   // FONT LOADING
   // ─────────────────────────────────────────────
@@ -383,11 +408,18 @@
 
   bgArtist.onload = () => { bgArtistLoaded = true; render(); };
   bgArtist.onerror = () => console.warn('[Background] Could not load "schedule-artist.png".');
-  bgArtist.src = 'schedule-artist.png';
+  bgArtist.src = 'schedule-artist1.png';
 
   bgNoArtist.onload = () => { bgNoArtistLoaded = true; render(); };
   bgNoArtist.onerror = () => console.warn('[Background] Could not load "schedule-no-artist.png".');
-  bgNoArtist.src = 'schedule-no-artist.png';
+  bgNoArtist.src = 'schedule-no-artist1.png';
+
+  dropdown.addEventListener('change', (event) => {
+    selectedArt = event.target.value;
+
+    bgArtist.src = 'schedule-artist' + selectedArt + '.png';
+    bgNoArtist.src = 'schedule-no-artist' + selectedArt + '.png';
+  });
 
   // ─────────────────────────────────────────────
   // RENDER
@@ -509,7 +541,7 @@
   });
 
   // Initial render once background image loads
-  bgImg.onload = () => { bgImage = bgImg; render(); };
+  //bgImg.onload = () => { bgImage = bgImg; render(); };
 
   // ─────────────────────────────────────────────
   // DOWNLOAD
@@ -517,8 +549,9 @@
   document.getElementById('download-btn').addEventListener('click', () => {
     render(); // ensure latest
     const link = document.createElement('a');
-    link.download = 'schedule-art.png';
+    link.download = 'schedule.png';
     link.href = canvas.toDataURL('image/png');
+    
     link.click();
   });
 </script>
